@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +34,7 @@ import com.iucoding.geolocation.presentation.util.hasNotificationPermission
 import com.iucoding.geolocation.presentation.util.requestRuniquePermissions
 import com.iucoding.geolocation.presentation.util.shouldShowLocationPermissionRationale
 import com.iucoding.geolocation.presentation.util.shouldShowNotificationPermissionRationale
+import kotlinx.collections.immutable.persistentListOf
 
 @Composable
 fun LocationScreen(
@@ -93,6 +95,33 @@ fun LocationScreen(
         }
     }
 
+    if (state.showLocationRationale || state.showNotificationRationale) {
+        LocationDialog(
+            title = stringResource(id = R.string.permission_required),
+            onDismiss = {
+                /* Normal dismissing not allowed for permissions */
+            },
+            description = when {
+                state.showLocationRationale && state.showNotificationRationale ->
+                    stringResource(id = R.string.location_notification_rationale)
+
+                state.showLocationRationale ->
+                    stringResource(id = R.string.location_rationale)
+
+                else -> stringResource(id = R.string.notification_rationale)
+            },
+            primaryButton = {
+                Button(
+                    onClick = {
+                        onAction(GeoLocationAction.DismissRationaleDialog)
+                        permissionLauncher.requestRuniquePermissions(context)
+                    }
+                ) {
+                    Text(text = stringResource(id = R.string.ok))
+                }
+            })
+    }
+
     Column(
         modifier = modifier
     ) {
@@ -102,30 +131,56 @@ fun LocationScreen(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Switch(
-                checked = false,
-                onCheckedChange = { observe ->
-                    val action = if (observe) {
-                        GeoLocationAction.StartTracking
-                    } else GeoLocationAction.StopTracking
-                    onAction(action)
-                }
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = stringResource(R.string.observe_location),
-                fontSize = 18.sp
+            SwitchLabel(
+                checked = state.shouldTrack,
+                onAction = onAction
             )
         }
-        LazyColumn(
-            modifier = Modifier.weight(1.0f)
-        ) {
-            items(state.locations) {
-                LocationItem(
-                    locationItemData = it,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+        LocationList(
+            locations = state.locations,
+            modifier = Modifier
+                .weight(1.0f)
+                .fillMaxWidth()
+        )
+    }
+}
+
+@Composable
+private fun SwitchLabel(
+    checked: Boolean,
+    onAction: (GeoLocationAction) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Switch(
+        checked = checked,
+        onCheckedChange = { observe ->
+            val action = if (observe) {
+                GeoLocationAction.StartTracking
+            } else GeoLocationAction.StopTracking
+            onAction(action)
+        },
+        modifier = modifier
+    )
+    Spacer(modifier = Modifier.width(16.dp))
+    Text(
+        text = stringResource(R.string.observe_location),
+        fontSize = 18.sp
+    )
+}
+
+@Composable
+private fun LocationList(
+    locations: List<LocationItemData>,
+    modifier: Modifier,
+) {
+    LazyColumn(
+        modifier = modifier
+    ) {
+        items(locations) {
+            LocationItem(
+                locationItemData = it,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
@@ -135,7 +190,7 @@ fun LocationScreen(
 private fun LocationScreenPreview() {
     LocationScreen(
         state = LocationState(
-            locations = listOf(
+            locations = persistentListOf(
                 LocationItemData(
                     latitude = "1.0",
                     longitude = "2.0",

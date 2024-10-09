@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.Looper
+import android.util.Log
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -53,6 +54,7 @@ class AndroidLocationObserver(
                 }
                 client.lastLocation.addOnSuccessListener { location ->
                     location?.let {
+                        Log.i("AndroidLocationObserver", "received location: $location")
                         trySend(it.toLocationWithAltitude())
                     }
                 }

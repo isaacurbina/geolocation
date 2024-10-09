@@ -1,75 +1,85 @@
 package com.iucoding.geolocation.presentation
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.iucoding.geolocation.data.toLocationItemData
 import com.iucoding.geolocation.domain.LocationTracker
 import com.iucoding.geolocation.presentation.action.GeoLocationAction
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
+import javax.inject.Inject
 
-class LocationViewModel(
+@HiltViewModel
+class LocationViewModel @Inject constructor(
     private val locationTracker: LocationTracker
 ) : ViewModel() {
 
+    private val _state = MutableStateFlow(LocationState())
+    val state = _state.asStateFlow()
+
     private val hasLocationPermission = MutableStateFlow(false)
 
-    var state by mutableStateOf(LocationState())
-        private set
-
     init {
-        hasLocationPermission.onEach {
-            if (it) {
-                locationTracker.startObservingLocation()
-            } else locationTracker.stopObservingLocation()
-        }.launchIn(viewModelScope)
-
         locationTracker.currentLocation.onEach { location ->
             location?.let {
-                val updatedLocations = state.locations.toMutableList().apply {
+                val updatedLocations = state.value.locations.toMutableList().apply {
                     add(0, it.toLocationItemData())
                 }
-                state = state.copy(locations = updatedLocations)
+                _state.update { it.copy(locations = updatedLocations.toImmutableList()) }
             }
+        }.launchIn(viewModelScope)
+
+        state.onEach {
+            Log.i(
+                "LocationViewModel",
+                "state: ${state.value.shouldTrack} | ${state.value.locations.size}"
+            )
         }.launchIn(viewModelScope)
     }
 
     fun onAction(action: GeoLocationAction) {
         when (action) {
             GeoLocationAction.DismissRationaleDialog -> {
-                state = state.copy(
-                    showNotificationRationale = false,
-                    showLocationRationale = false
-                )
+                _state.update {
+                    it.copy(
+                        showNotificationRationale = false,
+                        showLocationRationale = false
+                    )
+                }
             }
 
             GeoLocationAction.StartTracking -> {
-                state = state.copy(
-                    shouldTrack = true
-                )
+                locationTracker.startObservingLocation()
+                _state.update {
+                    it.copy(shouldTrack = true)
+                }
             }
 
             GeoLocationAction.StopTracking,
             GeoLocationAction.OnBackClick -> {
-                state = state.copy(
-                    shouldTrack = false
-                )
+                locationTracker.stopObservingLocation()
+                _state.update {
+                    it.copy(shouldTrack = false)
+                }
             }
 
             is GeoLocationAction.SubmitLocationPermissionInfo -> {
-                state = state.copy(
-                    showLocationRationale = action.showLocationRationale
-                )
+                hasLocationPermission.value = action.acceptedLocationPermission
+                _state.update {
+                    it.copy(showLocationRationale = action.showLocationRationale)
+                }
             }
 
             is GeoLocationAction.SubmitNotificationPermissionInfo -> {
-                state = state.copy(
-                    showNotificationRationale = action.showNotificationRationale
-                )
+                _state.update {
+                    it.copy(showNotificationRationale = action.showNotificationRationale)
+                }
             }
         }
     }

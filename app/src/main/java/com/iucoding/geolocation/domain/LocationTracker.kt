@@ -20,7 +20,7 @@ class LocationTracker(
     val currentLocation = isObservingLocation
         .flatMapLatest {
             if (it) {
-                locationObserver.observeLocation(1000L)
+                locationObserver.observeLocation(5000L)
             } else emptyFlow()
         }.stateIn(
             scope = CoroutineScope(Dispatchers.Main),
