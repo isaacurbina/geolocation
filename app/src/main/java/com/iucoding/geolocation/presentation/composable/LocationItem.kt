@@ -15,17 +15,19 @@ import com.iucoding.geolocation.presentation.model.LocationItemData
 
 @Composable
 fun LocationItem(
-    locationItemData: LocationItemData,
+    locationItemData: () -> LocationItemData,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier) {
         Text(
-            text = stringResource(
-                R.string.coordinates,
-                locationItemData.latitude,
-                locationItemData.longitude,
-                locationItemData.altitude
-            ),
+            text = locationItemData().let {
+                stringResource(
+                    R.string.coordinates,
+                    it.latitude,
+                    it.longitude,
+                    it.altitude
+                )
+            },
             fontSize = 16.sp,
             modifier = Modifier
                 .fillMaxWidth()
@@ -38,10 +40,12 @@ fun LocationItem(
 @Composable
 private fun LocationItemPreview() {
     LocationItem(
-        locationItemData = LocationItemData(
-            latitude = "1.0",
-            longitude = "2.0",
-            altitude = "-3.0"
-        )
+        locationItemData = {
+            LocationItemData(
+                latitude = "1.0",
+                longitude = "2.0",
+                altitude = "-3.0"
+            )
+        }
     )
 }
