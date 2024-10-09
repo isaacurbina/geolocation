@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
                     val viewModel: LocationViewModel = hiltViewModel()
                     val state by viewModel.state.collectAsState()
                     LocationScreen(
-                        state = state,
+                        stateProvider = { state },
                         onAction = viewModel::onAction,
                         modifier = Modifier.padding(innerPadding)
                     )

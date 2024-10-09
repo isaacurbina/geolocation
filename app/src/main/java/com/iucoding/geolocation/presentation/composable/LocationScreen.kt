@@ -38,7 +38,7 @@ import kotlinx.collections.immutable.persistentListOf
 
 @Composable
 fun LocationScreen(
-    state: LocationState,
+    stateProvider: () -> LocationState,
     onAction: (GeoLocationAction) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -95,6 +95,7 @@ fun LocationScreen(
         }
     }
 
+    val state = stateProvider()
     if (state.showLocationRationale || state.showNotificationRationale) {
         LocationDialog(
             title = stringResource(id = R.string.permission_required),
@@ -132,12 +133,12 @@ fun LocationScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             SwitchLabel(
-                checked = state.shouldTrack,
+                checked = { state.shouldTrack },
                 onAction = onAction
             )
         }
         LocationList(
-            locations = state.locations,
+            locations = { state.locations },
             modifier = Modifier
                 .weight(1.0f)
                 .fillMaxWidth()
@@ -147,12 +148,12 @@ fun LocationScreen(
 
 @Composable
 private fun SwitchLabel(
-    checked: Boolean,
+    checked: () -> Boolean,
     onAction: (GeoLocationAction) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Switch(
-        checked = checked,
+        checked = checked(),
         onCheckedChange = { observe ->
             val action = if (observe) {
                 GeoLocationAction.StartTracking
@@ -170,15 +171,15 @@ private fun SwitchLabel(
 
 @Composable
 private fun LocationList(
-    locations: List<LocationItemData>,
+    locations: () -> List<LocationItemData>,
     modifier: Modifier,
 ) {
     LazyColumn(
         modifier = modifier
     ) {
-        items(locations) {
+        items(locations()) {
             LocationItem(
-                locationItemData = it,
+                locationItemData = { it },
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -189,15 +190,17 @@ private fun LocationList(
 @Composable
 private fun LocationScreenPreview() {
     LocationScreen(
-        state = LocationState(
-            locations = persistentListOf(
-                LocationItemData(
-                    latitude = "1.0",
-                    longitude = "2.0",
-                    altitude = "-3.0"
+        stateProvider = {
+            LocationState(
+                locations = persistentListOf(
+                    LocationItemData(
+                        latitude = "1.0",
+                        longitude = "2.0",
+                        altitude = "-3.0"
+                    )
                 )
             )
-        ),
+        },
         onAction = {}
     )
 }
