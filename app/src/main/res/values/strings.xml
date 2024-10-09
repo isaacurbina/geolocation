@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">GeoLocation</string>
+    <string name="coordinates">Coordinates: %1$s, %2$s, %3$s</string>
+    <string name="observe_location">"Observe location"</string>
 </resources>
