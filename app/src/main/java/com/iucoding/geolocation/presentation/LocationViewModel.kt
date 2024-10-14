@@ -1,6 +1,5 @@
 package com.iucoding.geolocation.presentation
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.iucoding.geolocation.data.toLocationItemData
@@ -33,13 +32,6 @@ class LocationViewModel @Inject constructor(
                 }
                 _state.update { it.copy(locations = updatedLocations.toImmutableList()) }
             }
-        }.launchIn(viewModelScope)
-
-        state.onEach {
-            Log.i(
-                "LocationViewModel",
-                "state: ${state.value.shouldTrack} | ${state.value.locations.size}"
-            )
         }.launchIn(viewModelScope)
     }
 
